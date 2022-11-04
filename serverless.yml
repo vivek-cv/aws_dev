@@ -1,0 +1,58 @@
+service: app
+
+provider:
+    name: aws
+    region: ap-south-1
+    runtime: provided.al2
+    layers:
+        - ${bref:layer.php-81}
+    httpApi:
+        cors: true
+    environment:
+        API_GATEWAY_ID: !Ref WebsocketsApi
+    iamRoleStatements:
+        # Allow Lambda to access DynamoDB
+        -   Effect: Allow
+            Action: dynamodb:*
+            Resource:
+                -   !Sub '${WebsocketConnections.Arn}'
+                # Also allows access to secondary indexes
+                -   !Sub '${WebsocketConnections.Arn}/*'
+
+
+plugins:
+    - ./vendor/bref/bref
+
+
+# Exclude files from deployment
+functions:
+    websocket:
+        handler: socHandler.php
+        memorySize: 512
+        events:
+            - websocket: $connect
+            - websocket: $disconnect
+            - websocket: $default
+    dispatcher:
+        handler: snsHandler.php
+        events:
+            - sns: statusUpdate
+
+
+package:
+    exclude:
+        - website/**
+
+resources:
+    Resources:
+        WebsocketConnections:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: soc_connections
+                AttributeDefinitions:
+                    -   AttributeName: connectionId
+                        AttributeType: S
+                KeySchema:
+                    -   AttributeName: connectionId
+                        KeyType: HASH
+                BillingMode: PAY_PER_REQUEST

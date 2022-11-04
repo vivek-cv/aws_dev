@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="tailwind.css" rel="stylesheet">
+</head>
+<body class="w-full h-screen flex items-center justify-center">
+
+    <div id="app" class="">
+        <button type="button" @click="update()"
+                class="text-4xl transition-all duration-300 ease-linear transform"
+                :style="{ 'scale': `${this.claps + 1}` }">
+            complete
+        </button>
+
+        <button type="button" @click="other()"
+                class="text-4xl transition-all duration-300 ease-linear transform"
+                :style="{ 'scale': `${this.claps + 1}` }">
+            other
+        </button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script>
+        let socket = new WebSocket('wss://hkvyz6wvsi.execute-api.ap-south-1.amazonaws.com/dev');
+
+        const vue = new Vue({
+            el: '#app',
+            data: {
+                claps: 0,
+            },
+            methods: {
+                update() {
+                    socket.send('status_update');
+                },
+                create() {
+                    socket.send({"event_type": "meeting_status", "for":"client_6.123"});
+                },
+                receiveMessage(e) {
+                    alert(e.data);
+                }
+            },
+        });
+
+        socket.onmessage = function (event) {
+            vue.receiveMessage(event);
+        };
+    </script>
+
+</body>
+</html>
